@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake and Ladder Game</title>
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #d8f3dc;
+      text-align: center;
+      padding-top: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, 40px);
+      width: 400px;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 40px;
+      height: 40px;
+      border: 1px solid black;
+      position: relative;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .snake {
+      background-color: #fbb;
+    }
+    .ladder {
+      background-color: #ccf;
+    }
+    .player {
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Snake and Ladder Game</h2>
+  <p id="turnInfo"></p>
+  <button onclick="rollDice()">Roll Dice</button>
+  <p id="diceResult"></p>
+  <div class="board" id="board"></div>
+  <p id="winner"></p>
+
+  <script>
+    const numPlayers = parseInt(localStorage.getItem("numPlayers")) || 2;
+    const positions = new Array(numPlayers).fill(1);
+    let currentPlayer = 0;
+    const board = document.getElementById("board");
+
+    // Create board effect: ladder/snake value = random between -5 and +5 (excluding 0)
+    const effects = {};
+    for (let i = 2; i < 100; i++) {
+      const roll = Math.floor(Math.random() * 10); // 0–9 chance
+      if (roll < 2) {  // ~20% chance of effect
+        let effect = Math.floor(Math.random() * 5) + 1; // 1–5
+        if (Math.random() < 0.5) effect = -effect; // make it a snake half the time
+        effects[i] = effect;
+      }
+    }
+
+    function drawBoard() {
+      board.innerHTML = "";
+      for (let i = 100; i >= 1; i--) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        // Zig-zag row layout
+        const row = Math.floor((100 - i) / 10);
+        const col = (i - 1) % 10;
+        const adjustedCol = row % 2 === 0 ? col : 9 - col;
+
+        cell.style.gridColumn = adjustedCol + 1;
+        cell.style.gridRow = row + 1;
+
+        // Show effects
+        if (effects[i]) {
+          const effect = effects[i];
+          if (effect > 0) {
+            cell.classList.add("ladder");
+            cell.innerHTML = `🪜+${effect}<br>${i}`;
+          } else {
+            cell.classList.add("snake");
+            cell.innerHTML = `🐍${effect}<br>${i}`;
+          }
+        } else {
+          cell.innerText = i;
+        }
+
+        // Show players
+        for (let j = 0; j < numPlayers; j++) {
+          if (positions[j] === i) {
+            const p = document.createElement("div");
+            p.className = "player";
+            p.style.backgroundColor = playerColor(j);
+            p.innerText = j + 1;
+            cell.appendChild(p);
+          }
+        }
+
+        board.appendChild(cell);
+      }
+    }
+
+    function playerColor(index) {
+      const colors = ["red", "blue", "green", "purple", "orange", "brown", "pink"];
+      return colors[index % colors.length];
+    }
+
+    function rollDice() {
+      if (positions[currentPlayer] === 100) return;
+
+      const dice = Math.floor(Math.random() * 6) + 1;
+      document.getElementById("diceResult").innerText = `Player ${currentPlayer + 1} rolled a ${dice}`;
+
+      let pos = positions[currentPlayer] + dice;
+
+      if (pos > 100) pos = 100 - (pos - 100); // bounce back logic
+
+      if (effects[pos]) {
+        pos += effects[pos];
+        if (pos < 1) pos = 1;
+        if (pos > 100) pos = 100;
+      }
+
+      positions[currentPlayer] = pos;
+      drawBoard();
+
+      if (pos === 100) {
+        document.getElementById("winner").innerText = `🎉 Player ${currentPlayer + 1} won the game! 🎉`;
+        document.querySelector("button").disabled = true;
+        return;
+      }
+
+      currentPlayer = (currentPlayer + 1) % numPlayers;
+      document.getElementById("turnInfo").innerText = `It's Player ${currentPlayer + 1}'s turn`;
+    }
+
+    drawBoard();
+    document.getElementById("turnInfo").innerText = `It's Player ${currentPlayer + 1}'s turn`;
+  </script>
+</body>
+</html>
